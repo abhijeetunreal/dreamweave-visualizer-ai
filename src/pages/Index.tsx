@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -8,10 +7,15 @@ import VoiceCapture from '@/components/VoiceCapture';
 import DreamGenerator from '@/components/DreamGenerator';
 import DreamJournal from '@/components/DreamJournal';
 import AnalysisDashboard from '@/components/AnalysisDashboard';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 
 const Index = () => {
   const [currentPhase, setCurrentPhase] = useState<'landing' | 'capture' | 'processing' | 'journal' | 'analysis'>('landing');
   const [dreamData, setDreamData] = useState<any>(null);
+  const [isApiDialogOpen, setIsApiDialogOpen] = useState(false);
+  const [apiKey, setApiKey] = useState("");
 
   const phases = [
     { id: 'capture', name: 'Capture', icon: Mic, color: 'bg-purple-500' },
@@ -27,6 +31,27 @@ const Index = () => {
     
     // Simulate processing phases
     setTimeout(() => setCurrentPhase('journal'), 3000);
+  };
+
+  const handleStartJourney = () => {
+    const storedKey = localStorage.getItem("gemini_api_key");
+    if (storedKey) {
+      setCurrentPhase('capture');
+    } else {
+      setIsApiDialogOpen(true);
+    }
+  };
+
+  const handleSaveApiKey = () => {
+    if (apiKey.trim()) {
+      localStorage.setItem("gemini_api_key", apiKey.trim());
+      setApiKey("");
+      setIsApiDialogOpen(false);
+      setCurrentPhase('capture');
+      toast.success("API Key saved successfully!");
+    } else {
+      toast.error("Please enter a valid API Key.");
+    }
   };
 
   if (currentPhase === 'capture') {
@@ -120,7 +145,7 @@ const Index = () => {
         {/* CTA */}
         <div className="text-center">
           <Button 
-            onClick={() => setCurrentPhase('capture')}
+            onClick={handleStartJourney}
             size="lg"
             className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-8 py-4 text-lg font-semibold rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
           >
@@ -132,6 +157,26 @@ const Index = () => {
           </p>
         </div>
       </div>
+      <Dialog open={isApiDialogOpen} onOpenChange={setIsApiDialogOpen}>
+        <DialogContent className="bg-slate-900 border-purple-500 text-white">
+          <DialogHeader>
+            <DialogTitle>Enter your Gemini API Key</DialogTitle>
+            <DialogDescription className="text-slate-400">
+              You can get a free API key from Google AI Studio. Your key is stored only in your browser's local storage.
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value)}
+            placeholder="Your Gemini API Key"
+            type="password"
+            className="bg-slate-800 border-slate-600 text-white placeholder:text-slate-500"
+          />
+          <DialogFooter>
+            <Button onClick={handleSaveApiKey} className="bg-purple-600 hover:bg-purple-700">Save and Continue</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
