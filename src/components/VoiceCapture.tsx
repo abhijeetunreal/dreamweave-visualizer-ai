@@ -1,9 +1,9 @@
+
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Mic, Square, Brain, Loader2 } from 'lucide-react';
-import { toast } from "sonner";
 
 interface VoiceCaptureProps {
   onComplete: (data: any) => void;
@@ -84,74 +84,51 @@ const VoiceCapture = ({ onComplete }: VoiceCaptureProps) => {
     }
   };
 
-  const processAudio = async () => {
+  const processAudio = () => {
     setIsProcessing(true);
-    setTranscript("Initializing AI dream analysis...");
-
-    const apiKey = localStorage.getItem("gemini_api_key");
-    if (!apiKey) {
-      toast.error("Gemini API Key not found. Please set it on the homepage.");
-      setIsProcessing(false);
-      setTranscript("Error: API Key is missing.");
-      return;
-    }
-
-    setTranscript("Simulating transcription...");
     
-    // For now, we'll use a mock transcript. The next step would be to implement speech-to-text.
-    const mockTranscript = `I was flying through a purple giraffe world where a glass elevator transported me to a place where I was sinking through the floor. The feeling of weightlessness overwhelmed me as I found myself talking to my childhood self. Everything had a strange quality, like a sour-tasting light.`;
-    
-    setTranscript("Extracting dream fragments with Gemini...");
+    // Simulate AI processing stages
+    const processingStages = [
+      { message: "Transcribing with Gemini Pro...", duration: 1000 },
+      { message: "Extracting emotional fragments...", duration: 1200 },
+      { message: "Identifying dream symbols...", duration: 1500 },
+      { message: "Analyzing vocal patterns...", duration: 800 },
+    ];
 
-    try {
-      const prompt = `You are a dream analysis AI. Your task is to extract key fragments from a dream description. These fragments should be short (2-5 words) and represent key objects, actions, feelings, or surreal concepts. Return the fragments as a JSON array of strings. Do not include anything else in your response, just the JSON array.
+    let currentStage = 0;
+    const dreamFragments = [
+      "purple giraffe",
+      "glass elevator",
+      "sinking through floor",
+      "weightlessness",
+      "talking to childhood self",
+      "sour-tasting light"
+    ];
 
-Dream description:
-"${mockTranscript}"`;
-
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: {
-              responseMimeType: "application/json",
-            },
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error.message || "Failed to communicate with Gemini API.");
+    const processStage = () => {
+      if (currentStage < processingStages.length) {
+        setTranscript(processingStages[currentStage].message);
+        currentStage++;
+        setTimeout(processStage, processingStages[currentStage - 1].duration);
+      } else {
+        // Simulate final transcription
+        const finalTranscript = `I was flying through a ${dreamFragments[0]} world where ${dreamFragments[1]} transported me to a place where I was ${dreamFragments[2]}. The feeling of ${dreamFragments[3]} overwhelmed me as I found myself ${dreamFragments[4]}. Everything had a strange quality, like ${dreamFragments[5]}.`;
+        
+        setTranscript(finalTranscript);
+        
+        setTimeout(() => {
+          onComplete({
+            transcript: finalTranscript,
+            fragments: dreamFragments,
+            duration: recordingTime / 10,
+            emotion: 'curious',
+            intensity: 0.7
+          });
+        }, 2000);
       }
+    };
 
-      const data = await response.json();
-      const fragments = data.candidates[0].content.parts[0].text;
-      
-      setTranscript(`Analysis complete. Reconstructing dream...`);
-
-      setTimeout(() => {
-        onComplete({
-          transcript: mockTranscript,
-          fragments: fragments,
-          duration: recordingTime / 10,
-          emotion: 'curious',
-          intensity: 0.7
-        });
-      }, 1500);
-
-    } catch (error) {
-      console.error("Error processing with Gemini:", error);
-      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
-      toast.error(`Gemini Processing Failed: ${errorMessage}`);
-      setIsProcessing(false);
-      setTranscript(`Error: ${errorMessage}. Please check your API key and try again.`);
-    }
+    setTimeout(processStage, 1000);
   };
 
   useEffect(() => {
